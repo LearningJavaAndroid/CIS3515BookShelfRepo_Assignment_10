@@ -32,13 +32,14 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     private final String KEY_SELECTED_BOOK = "selectedBook", KEY_PLAYING_BOOK = "playingBook";
     private final String KEY_BOOKLIST = "searchedook";
     private final int BOOK_SEARCH_REQUEST_CODE = 123;
+    //hi there
 
     private AudiobookService.MediaControlBinder mediaControl;
     private boolean serviceConnected;
 
     Intent serviceIntent;
 
-    BookList bookList;
+    BookList bookList; //booklists and stuff
 
     Handler progressHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
         @Override
