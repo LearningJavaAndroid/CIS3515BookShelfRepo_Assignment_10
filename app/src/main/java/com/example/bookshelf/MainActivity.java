@@ -2,20 +2,28 @@ package com.example.bookshelf;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import android.app.DownloadManager;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.media.MediaPlayer;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
 import android.view.View;
 import android.widget.Toast;
+
+import java.io.File;
 
 import edu.temple.audiobookplayer.AudiobookService;
 
@@ -203,6 +211,39 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             }
             showNewBooks();
         }
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.Q)
+    public void download(Book book){
+        Uri file_uri = Uri.parse("https://kamorris.com/lab/audlib/download.php?id="+book.getId());
+        DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        DownloadManager.Request request = new DownloadManager.Request(file_uri);
+
+        //Setting title of request
+        request.setTitle("Audio Download : "+book.getTitle());
+
+        //Setting description of request
+        request.setDescription("Title: "+book.getTitle()+ " Author: "+book.getAuthor()+ " Duration: "+book.getDuration());
+
+        //Set the local destination for the downloaded file to a path
+        //within the application's external files directory
+        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_AUDIOBOOKS + "/", book.getTitle());
+
+        //Enqueue download
+        long id = downloadManager.enqueue(request);
+        
+    }
+
+    // Checks if a volume containing external storage is available
+    // for read and write.
+    private boolean isExternalStorageWritable() {
+        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
+    }
+
+    // Checks if a volume containing external storage is available to at least read.
+    private boolean isExternalStorageReadable() {
+        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED) ||
+                Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED_READ_ONLY);
     }
 
     @Override
