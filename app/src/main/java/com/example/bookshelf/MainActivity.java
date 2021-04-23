@@ -8,9 +8,12 @@ import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
 import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.net.Uri;
 import android.os.Build;
@@ -42,6 +45,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     private final int BOOK_SEARCH_REQUEST_CODE = 123;
     //hi there
 
+    public static boolean isDownloadComplete = false;
     private AudiobookService.MediaControlBinder mediaControl;
     private boolean serviceConnected;
 
@@ -231,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
 
         //Enqueue download
         long id = downloadManager.enqueue(request);
-        
+
     }
 
     // Checks if a volume containing external storage is available
@@ -289,4 +293,5 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         super.onDestroy();
         unbindService(serviceConnection);
     }
+
 }
