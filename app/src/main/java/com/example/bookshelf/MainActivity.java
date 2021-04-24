@@ -255,6 +255,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
                 isDownloadComplete = true;
                 playingBook.setFile(Tempfile);
                 Toast.makeText(MainActivity.this, "Download Complete", Toast.LENGTH_SHORT).show();
+                Log.d("FILE", "DownLoad Complete");
 
             }
         }
