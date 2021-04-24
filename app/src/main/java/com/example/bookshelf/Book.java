@@ -3,6 +3,9 @@ package com.example.bookshelf;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import java.io.File;
+import java.net.URI;
+
 public class Book implements Parcelable {
 
     private int id;
@@ -10,6 +13,7 @@ public class Book implements Parcelable {
     private String author;
     private String coverUrl;
     private int duration;
+    private File file;
 
     public Book(int id, String title, String author, String coverUrl, int duration) {
         this.id = id;
@@ -18,6 +22,16 @@ public class Book implements Parcelable {
         this.coverUrl = coverUrl;
         this.duration = duration;
     }
+
+    public Book(int id, String title, String author, String coverUrl, int duration, File file){
+        this.id = id;
+        this.title = title;
+        this.author = author;
+        this.coverUrl = coverUrl;
+        this.duration = duration;
+        this.file = file;
+    }
+
 
     protected Book(Parcel in) {
         id = in.readInt();
@@ -38,6 +52,13 @@ public class Book implements Parcelable {
             return new Book[size];
         }
     };
+
+    public File getFile(){
+        return file;
+    }
+    public void setFile(File file){
+        this.file = file;
+    }
 
     public int getId() {
         return id;
@@ -79,17 +100,18 @@ public class Book implements Parcelable {
         this.duration = duration;
     }
 
+
     @Override
     public int describeContents() {
         return 0;
     }
 
     @Override
-    public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeInt(id);
-        parcel.writeString(title);
-        parcel.writeString(author);
-        parcel.writeString(coverUrl);
-        parcel.writeInt(duration);
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(id);
+        dest.writeString(title);
+        dest.writeString(author);
+        dest.writeString(coverUrl);
+        dest.writeInt(duration);
     }
 }

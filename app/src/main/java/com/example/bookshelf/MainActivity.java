@@ -12,6 +12,7 @@ import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.database.Cursor;
 import android.media.MediaPlayer;
@@ -23,12 +24,15 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Message;
+import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
 import java.io.File;
 
 import edu.temple.audiobookplayer.AudiobookService;
+
+import static com.example.bookshelf.MainActivity.isDownloadComplete;
 
 public class MainActivity extends AppCompatActivity implements BookListFragment.BookSelectedInterface, ControlFragment.ControlInterface {
 
@@ -37,13 +41,16 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     private boolean twoPane;
     private  BookDetailsFragment bookDetailsFragment;
     private  ControlFragment controlFragment;
-    private Book selectedBook, playingBook;
+    public Book selectedBook, playingBook;
 
     private final String TAG_BOOKLIST = "booklist", TAG_BOOKDETAILS = "bookdetails";
     private final String KEY_SELECTED_BOOK = "selectedBook", KEY_PLAYING_BOOK = "playingBook";
     private final String KEY_BOOKLIST = "searchedook";
     private final int BOOK_SEARCH_REQUEST_CODE = 123;
     //hi there
+    private long Aid;
+    public DownloadManager downloadManager;
+    public File Tempfile;
 
     public static boolean isDownloadComplete = false;
     private AudiobookService.MediaControlBinder mediaControl;
@@ -51,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
 
     Intent serviceIntent;
 
-    BookList bookList; //booklists and stuff
+    public BookList bookList; //booklists and stuff
 
     Handler progressHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
         @Override
@@ -84,7 +91,8 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        //catch the download being completed from download manager which uses bradcast message
+        registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
         serviceIntent = new Intent (this, AudiobookService.class);
 
         bindService(serviceIntent, serviceConnection, BIND_AUTO_CREATE);
@@ -217,10 +225,10 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.Q)
-    public void download(Book book){
+    public File download(Book book){
+        File file = new File(getExternalFilesDir(null),book.getTitle());
         Uri file_uri = Uri.parse("https://kamorris.com/lab/audlib/download.php?id="+book.getId());
-        DownloadManager downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+        downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         DownloadManager.Request request = new DownloadManager.Request(file_uri);
 
         //Setting title of request
@@ -229,34 +237,81 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         //Setting description of request
         request.setDescription("Title: "+book.getTitle()+ " Author: "+book.getAuthor()+ " Duration: "+book.getDuration());
 
-        //Set the local destination for the downloaded file to a path
-        //within the application's external files directory
-        request.setDestinationInExternalPublicDir(Environment.DIRECTORY_AUDIOBOOKS + "/", book.getTitle());
+        // set the file URi as destination
+        request.setDestinationUri(Uri.fromFile(file));
 
         //Enqueue download
-        long id = downloadManager.enqueue(request);
+        Aid = downloadManager.enqueue(request);
+        Log.d( "FILE", "download Status id: "+Aid);
 
+
+        return file;
+    }
+    BroadcastReceiver onComplete = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+            if(Aid == id){
+                isDownloadComplete = true;
+                playingBook.setFile(Tempfile);
+                Toast.makeText(MainActivity.this, "Download Complete", Toast.LENGTH_SHORT).show();
+
+            }
+        }
+    };
+    private boolean validDownload(long downloadId) {
+
+        Log.d("FILE","Checking download status for id: " + downloadId);
+
+        //Verify if download is a success
+        Cursor c= downloadManager.query(new DownloadManager.Query().setFilterById(downloadId));
+
+        if(c.moveToFirst()){
+            int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
+
+            if(status == DownloadManager.STATUS_SUCCESSFUL){
+                return true; //Download is valid, celebrate
+            }else{
+                int reason = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_REASON));
+                Log.d("FILE", "Download not correct, status [" + status + "] reason [" + reason + "]");
+                return false;
+            }
+        }
+        return false;
+    }
+    @Nullable
+    File getAppSpecificAudioStorageDir(Context context, String bookTitle) {
+        // Get the directory that's inside the app-specific directory on
+        // external storage.
+        File file = new File(context.getExternalFilesDir(
+                Environment.DIRECTORY_DOWNLOADS), bookTitle); //creates a new file instance from a pathname
+        Log.d( "FILE", "File is made "+ file.getAbsolutePath());
+        if (file == null || !file.exists()) {
+            Log.d( "FILE", "File is NULL or Directory is not created");
+        }
+        return file;
     }
 
-    // Checks if a volume containing external storage is available
-    // for read and write.
-    private boolean isExternalStorageWritable() {
-        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED);
-    }
-
-    // Checks if a volume containing external storage is available to at least read.
-    private boolean isExternalStorageReadable() {
-        return Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED) ||
-                Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED_READ_ONLY);
-    }
 
     @Override
     public void play() {
         if (selectedBook != null) {
             playingBook = selectedBook;
-            controlFragment.setNowPlaying(getString(R.string.now_playing, playingBook.getTitle()));
-            if (serviceConnected) {
-                mediaControl.play(selectedBook.getId());
+            controlFragment.setNowPlaying(getString(R.string.now_playing, selectedBook.getTitle())); //setting the title
+//          File file = getAppSpecificAudioStorageDir(this, selectedBook.getTitle());
+
+            if(playingBook.getFile() == null){ //if file is not downloaded
+                Log.d( "FILE", "File does not exists");
+                if (serviceConnected) {
+                    mediaControl.play(selectedBook.getId());
+                    Tempfile = download(playingBook);
+                    Log.d( "FILE", "Playing from online check");
+
+                }
+            }else{// if the File exists, play the downloaded file
+                Log.d( "FILE", "File exists");
+                mediaControl.play(playingBook.getFile());
+                Log.d( "FILE", "Playing from download check: ");
             }
 
             // Make sure that the service doesn't stop
@@ -292,6 +347,8 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     protected void onDestroy() {
         super.onDestroy();
         unbindService(serviceConnection);
+        unregisterReceiver(onComplete);
     }
 
 }
+
