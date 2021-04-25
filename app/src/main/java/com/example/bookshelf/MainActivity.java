@@ -253,9 +253,11 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
             if(Aid == id){
                 isDownloadComplete = true;
+                bookList.getByTitle(playingBook).setFile(Tempfile);
                 playingBook.setFile(Tempfile);
+                selectedBook.setFile(Tempfile);
                 Toast.makeText(MainActivity.this, "Download Complete", Toast.LENGTH_SHORT).show();
-                Log.d("FILE", "DownLoad Complete");
+                Log.d("FILE", "File path for: "+bookList.getByTitle(playingBook).getFile());
 
             }
         }
@@ -301,16 +303,17 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             controlFragment.setNowPlaying(getString(R.string.now_playing, selectedBook.getTitle())); //setting the title
 //          File file = getAppSpecificAudioStorageDir(this, selectedBook.getTitle());
 
-            if(playingBook.getFile() == null){ //if file is not downloaded
-                Log.d( "FILE", "File does not exists");
+            if(bookList.getByTitle(selectedBook).getFile() == null){ //if file is not downloaded
+                Log.d( "FILE", bookList.getByTitle(selectedBook).getFile()+": does not exists");
                 if (serviceConnected) {
                     mediaControl.play(selectedBook.getId());
                     Tempfile = download(playingBook);
                     Log.d( "FILE", "Playing from online check");
 
                 }
+                // for some reason only great expectations does not work, but other files works? when downloading
             }else{// if the File exists, play the downloaded file
-                Log.d( "FILE", "File exists");
+                Log.d( "FILE", bookList.getByTitle(selectedBook).getFile()+": exists");
                 mediaControl.play(playingBook.getFile());
                 Log.d( "FILE", "Playing from download check: ");
             }

@@ -46,6 +46,17 @@ public class BookList implements Parcelable {
         return books.get(position);
     }
 
+    public Book getByTitle(Book book){
+
+        if (books.contains(book)){
+            int position = books.indexOf(book);
+            if(position != -1){
+                return get(position);
+            }
+        }
+        return null;
+    }
+
     public int size() {
         return books.size();
     }
