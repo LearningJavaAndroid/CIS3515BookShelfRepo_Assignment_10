@@ -13,7 +13,7 @@ public class Book implements Parcelable {
     private String author;
     private String coverUrl;
     private int duration;
-    private File file;
+    private String file;
 
     public Book(int id, String title, String author, String coverUrl, int duration) {
         this.id = id;
@@ -23,7 +23,7 @@ public class Book implements Parcelable {
         this.duration = duration;
     }
 
-    public Book(int id, String title, String author, String coverUrl, int duration, File file){
+    public Book(int id, String title, String author, String coverUrl, int duration, String file){
         this.id = id;
         this.title = title;
         this.author = author;
@@ -39,6 +39,7 @@ public class Book implements Parcelable {
         author = in.readString();
         coverUrl = in.readString();
         duration = in.readInt();
+        file = in.readString();
     }
 
     public static final Creator<Book> CREATOR = new Creator<Book>() {
@@ -53,10 +54,10 @@ public class Book implements Parcelable {
         }
     };
 
-    public File getFile(){
+    public String getFile(){
         return file;
     }
-    public void setFile(File file){
+    public void setFile(String file){
         this.file = file;
     }
 
@@ -113,5 +114,6 @@ public class Book implements Parcelable {
         dest.writeString(author);
         dest.writeString(coverUrl);
         dest.writeInt(duration);
+        dest.writeString(file);
     }
 }

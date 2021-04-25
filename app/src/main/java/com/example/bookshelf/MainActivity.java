@@ -4,9 +4,11 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
+import android.Manifest;
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -14,6 +16,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.media.MediaPlayer;
 import android.net.Uri;
@@ -32,6 +35,8 @@ import java.io.File;
 
 import edu.temple.audiobookplayer.AudiobookService;
 
+import static android.Manifest.permission.READ_EXTERNAL_STORAGE;
+import static android.Manifest.permission.WRITE_EXTERNAL_STORAGE;
 import static com.example.bookshelf.MainActivity.isDownloadComplete;
 
 public class MainActivity extends AppCompatActivity implements BookListFragment.BookSelectedInterface, ControlFragment.ControlInterface {
@@ -47,6 +52,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     private final String KEY_SELECTED_BOOK = "selectedBook", KEY_PLAYING_BOOK = "playingBook";
     private final String KEY_BOOKLIST = "searchedook";
     private final int BOOK_SEARCH_REQUEST_CODE = 123;
+    private final String DIR = "audioBook";
     //hi there
     private long Aid;
     public DownloadManager downloadManager;
@@ -56,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     private AudiobookService.MediaControlBinder mediaControl;
     private boolean serviceConnected;
 
+    SharedPreferences preferences;
     Intent serviceIntent;
 
     public BookList bookList; //booklists and stuff
@@ -86,6 +93,16 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             serviceConnected = false;
         }
     };
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+
+    }
+    private void askForPermission(){
+        String[] permissions = new String[]{READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE};
+        ActivityCompat.requestPermissions(MainActivity.this, permissions, 1);
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -226,7 +243,8 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     }
 
     public File download(Book book){
-        File file = new File(getExternalFilesDir(null),book.getTitle());
+        // when getting the directory and path, make sure to use get absolute path. Important to get to access later
+        File file = new File(MainActivity.this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath(), String.valueOf(book.getId()));
         Uri file_uri = Uri.parse("https://kamorris.com/lab/audlib/download.php?id="+book.getId());
         downloadManager = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
         DownloadManager.Request request = new DownloadManager.Request(file_uri);
@@ -239,6 +257,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
 
         // set the file URi as destination
         request.setDestinationUri(Uri.fromFile(file));
+        //request.setDestinationInExternalFilesDir(MainActivity.this,Environment.DIRECTORY_DOWNLOADS,"");
 
         //Enqueue download
         Aid = downloadManager.enqueue(request);
