@@ -56,7 +56,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     //hi there
     private long Aid;
     public DownloadManager downloadManager;
-    public File Tempfile;
+    public String Tempfile;
 
     public static boolean isDownloadComplete = false;
     private AudiobookService.MediaControlBinder mediaControl;
@@ -94,15 +94,15 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         }
     };
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-
-    }
-    private void askForPermission(){
-        String[] permissions = new String[]{READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE};
-        ActivityCompat.requestPermissions(MainActivity.this, permissions, 1);
-    }
+//    @Override
+//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+//
+//    }
+//    private void askForPermission(){
+//        String[] permissions = new String[]{READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE};
+//        ActivityCompat.requestPermissions(MainActivity.this, permissions, 1);
+//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -242,7 +242,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         }
     }
 
-    public File download(Book book){
+    public String download(Book book){
         // when getting the directory and path, make sure to use get absolute path. Important to get to access later
         File file = new File(MainActivity.this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath(), String.valueOf(book.getId()));
         Uri file_uri = Uri.parse("https://kamorris.com/lab/audlib/download.php?id="+book.getId());
@@ -263,8 +263,9 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         Aid = downloadManager.enqueue(request);
         Log.d( "FILE", "download Status id: "+Aid);
 
+        String path = file.getPath().toString();
 
-        return file;
+        return path;
     }
     BroadcastReceiver onComplete = new BroadcastReceiver() {
         @Override
@@ -321,9 +322,9 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             playingBook = selectedBook;
             controlFragment.setNowPlaying(getString(R.string.now_playing, selectedBook.getTitle())); //setting the title
 //          File file = getAppSpecificAudioStorageDir(this, selectedBook.getTitle());
-
+            Log.d( "FILE", bookList.getByTitle(selectedBook).getFile()+": path of selected book");
             if(bookList.getByTitle(selectedBook).getFile() == null){ //if file is not downloaded
-                Log.d( "FILE", bookList.getByTitle(selectedBook).getFile()+": does not exists");
+                //Log.d( "FILE", bookList.getByTitle(selectedBook).getFile()+": does not exists");
                 if (serviceConnected) {
                     mediaControl.play(selectedBook.getId());
                     Tempfile = download(playingBook);
@@ -333,7 +334,8 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
                 // for some reason only great expectations does not work, but other files works? when downloading
             }else{// if the File exists, play the downloaded file
                 Log.d( "FILE", bookList.getByTitle(selectedBook).getFile()+": exists");
-                mediaControl.play(playingBook.getFile());
+                File tempfile = new File(MainActivity.this.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS).getAbsolutePath(), String.valueOf(selectedBook.getId()));
+                mediaControl.play(tempfile);
                 Log.d( "FILE", "Playing from download check: ");
             }
 
