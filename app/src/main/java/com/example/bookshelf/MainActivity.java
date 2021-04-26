@@ -31,7 +31,10 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Toast;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 
 import edu.temple.audiobookplayer.AudiobookService;
 
@@ -61,11 +64,15 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
     public static boolean isDownloadComplete = false;
     private AudiobookService.MediaControlBinder mediaControl;
     private boolean serviceConnected;
+    boolean autoSave;
 
     SharedPreferences preferences;
     Intent serviceIntent;
 
     public BookList bookList; //booklists and stuff
+
+    String internalFilename = "myfile";
+    File file;
 
     Handler progressHandler = new Handler(Looper.getMainLooper(), new Handler.Callback() {
         @Override
@@ -94,21 +101,16 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
         }
     };
 
-//    @Override
-//    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-//        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-//
-//    }
-//    private void askForPermission(){
-//        String[] permissions = new String[]{READ_EXTERNAL_STORAGE, WRITE_EXTERNAL_STORAGE};
-//        ActivityCompat.requestPermissions(MainActivity.this, permissions, 1);
-//    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         //catch the download being completed from download manager which uses bradcast message
+        file = new File(getFilesDir(), internalFilename);
+
+        preferences = getPreferences(MODE_PRIVATE);
+
         registerReceiver(onComplete, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
         serviceIntent = new Intent (this, AudiobookService.class);
 
@@ -136,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements BookListFragment.
             // Create empty booklist if
             bookList = new BookList();
         }
-
+        autoSave = preferences.getBoolean("autoSave", false); // Read last saved value from preferences, or false if no value saved
         twoPane = findViewById(R.id.container2) != null;
 
         Fragment fragment1;
